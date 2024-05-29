@@ -1,63 +1,82 @@
-const { v4: uuidv4 } = require('uuid');
-
-// Users
-let users = [];
+const User = require('../models/user');
 
 // Get all users
-const getUsers = (req, res) => {
+const getUsers = async (req, res) => {
+  try {
+    const users = await User.find();
     res.send(users);
-}
+  } catch (err) {
+    res.status(500).send(err.message);
+  }
+};
 
 // Add a new user
-const createUser = (req, res) => {
-    const user = req.body;
+const createUser = async (req, res) => {
+  try {
+    const { firstName, lastName, age } = req.body;
+    if (!firstName || !lastName || !age) {
+      return res.status(400).send("All fields (firstName, lastName, age) are required.");
+    }
 
-    users.push({ ...user, id: uuidv4() });
-
-    res.send(`User with the name ${user.firstName} added to the database!`);
+    const user = new User({ firstName, lastName, age });
+    await user.save();
+    res.send(`User with the name ${firstName} ${lastName} added to the database!`);
+  } catch (err) {
+    res.status(500).send(err.message);
+  }
 };
 
 // Get a user by ID
-const getUser = (req, res) => {
-    const { id } = req.params;
-    const foundUser = users.find((user) => user.id === id);
-    if (foundUser) {
-        res.send(foundUser);
+const getUser = async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id);
+    if (user) {
+      res.send(user);
     } else {
-        res.status(404).send(`User with the id ${id} not found`);
+      res.status(404).send(`User with the id ${req.params.id} not found`);
     }
+  } catch (err) {
+    res.status(500).send(err.message);
+  }
 };
 
 // Delete a user by ID
-const deleteUser = (req, res) => {
-    const { id } = req.params;
-  
-    users = users.filter((user) => user.id !== id);
-  
-    res.send(`User with the id ${id} deleted from the database`);
-  };
-
-  const updateUser = (req, res) => {
-    const { id } = req.params;
-    const { firstName, lastName, age } = req.body;
-  
-    const user = users.find((user) => user.id === id);
-  
+const deleteUser = async (req, res) => {
+  try {
+    const user = await User.findByIdAndDelete(req.params.id);
     if (user) {
-      if (firstName) user.firstName = firstName;
-      if (lastName) user.lastName = lastName;
-      if (age) user.age = age;
-  
-      res.send(`User with the id ${id} has been updated`);
+      res.send(`User with the id ${req.params.id} deleted from the database`);
     } else {
-      res.status(404).send(`User with the id ${id} not found`);
+      res.status(404).send(`User with the id ${req.params.id} not found`);
     }
-  };
-module.exports = {
-    getUsers,
-    createUser,
-    getUser,
-    deleteUser,
-    updateUser
+  } catch (err) {
+    res.status(500).send(err.message);
+  }
+};
 
-}
+// Update a user by ID
+const updateUser = async (req, res) => {
+  try {
+    const { firstName, lastName, age } = req.body;
+    if (!firstName || !lastName || !age) {
+      return res.status(400).send("All fields (firstName, lastName, age) are required.");
+    }
+
+    const updatedUser = await User.findByIdAndUpdate(req.params.id, { firstName, lastName, age }, { new: true });
+    if (updatedUser) {
+      res.send(`User with the id ${req.params.id} has been updated`);
+    } else {
+      res.status(404).send(`User with the id ${req.params.id} not found`);
+    }
+  } catch (err) {
+    res.status(500).send(err.message);
+  }
+};
+
+module.exports = {
+  getUsers,
+  createUser,
+  getUser,
+  deleteUser,
+  updateUser
+};

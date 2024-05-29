@@ -21,3 +21,7 @@ router.delete('/:id',deleteUser );
 router.patch('/:id', updateUser);
 
 module.exports = router;
+
+
+
+
